@@ -25,6 +25,10 @@ export function extractVideoId(card: Element): string | null {
   return null;
 }
 
+function isWatchPage(): boolean {
+  return window.location.pathname === '/watch';
+}
+
 export function injectIntoCard(card: Element): void {
   const videoId = extractVideoId(card);
   if (!videoId) return;
@@ -36,20 +40,25 @@ export function injectIntoCard(card: Element): void {
   if (metadataVM.hasAttribute(INJECTED_ATTR)) return;
   metadataVM.setAttribute(INJECTED_ATTR, '1');
 
-  const textContainer = metadataVM.querySelector('.yt-lockup-metadata-view-model__text-container');
-  if (!textContainer) return;
-
   const initialState = hasCopied(videoId) ? 'copied' : 'idle';
   const btn = createButton(videoId, initialState);
 
-  const menuBtn = metadataVM.querySelector('.yt-lockup-metadata-view-model__menu-button');
-  if (menuBtn) {
-    metadataVM.insertBefore(btn, menuBtn);
+  if (isWatchPage()) {
+    // Sidebar: append as a 4th row inside the text container so the title isn't squeezed
+    const textContainer = metadataVM.querySelector('.yt-lockup-metadata-view-model__text-container');
+    if (!textContainer) return;
+    btn.classList.add('yt-transcript-btn--stacked');
+    textContainer.appendChild(btn);
   } else {
-    metadataVM.appendChild(btn);
+    // Homepage: sit beside the menu button at the metadataVM level
+    const menuBtn = metadataVM.querySelector('.yt-lockup-metadata-view-model__menu-button');
+    if (menuBtn) {
+      metadataVM.insertBefore(btn, menuBtn);
+    } else {
+      metadataVM.appendChild(btn);
+    }
   }
 
-  // Mark card too so the querySelectorAll selector can skip it
   card.setAttribute(INJECTED_ATTR, '1');
 }
 
