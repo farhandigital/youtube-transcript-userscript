@@ -15,7 +15,6 @@ export function extractVideoId(card: Element): string | null {
     }
   }
 
-  // Fallback: content-id class e.g. content-id-wmP3MBjsx20
   const el = card.querySelector('[class*="content-id-"]');
   if (el) {
     const match = el.className.match(/content-id-([A-Za-z0-9_-]{11})/);
@@ -33,30 +32,34 @@ export function injectIntoCard(card: Element): void {
   const videoId = extractVideoId(card);
   if (!videoId) return;
 
-  const metadataVM = card.querySelector('yt-lockup-metadata-view-model');
-  if (!metadataVM) return;
-
-  // Guard on the actual injection target to handle re-used card shells
-  if (metadataVM.hasAttribute(INJECTED_ATTR)) return;
-  metadataVM.setAttribute(INJECTED_ATTR, '1');
+  if (card.hasAttribute(INJECTED_ATTR)) return;
 
   const initialState = hasCopied(videoId) ? 'copied' : 'idle';
   const btn = createButton(videoId, initialState);
 
-  if (isWatchPage()) {
-    // Sidebar: append as a 4th row inside the text container so the title isn't squeezed
-    const textContainer = metadataVM.querySelector('.yt-lockup-metadata-view-model__text-container');
-    if (!textContainer) return;
-    btn.classList.add('yt-transcript-btn--stacked');
-    textContainer.appendChild(btn);
-  } else {
-    // Homepage: sit beside the menu button at the metadataVM level
-    const menuBtn = metadataVM.querySelector('.yt-lockup-metadata-view-model__menu-button');
-    if (menuBtn) {
-      metadataVM.insertBefore(btn, menuBtn);
+  const metadataVM = card.querySelector('yt-lockup-metadata-view-model');
+  if (metadataVM) {
+    if (metadataVM.hasAttribute(INJECTED_ATTR)) return;
+    metadataVM.setAttribute(INJECTED_ATTR, '1');
+
+    if (isWatchPage()) {
+      const textContainer = metadataVM.querySelector('.yt-lockup-metadata-view-model__text-container');
+      if (!textContainer) return;
+      btn.classList.add('yt-transcript-btn--stacked');
+      textContainer.appendChild(btn);
     } else {
-      metadataVM.appendChild(btn);
+      const menuBtn = metadataVM.querySelector('.yt-lockup-metadata-view-model__menu-button');
+      if (menuBtn) {
+        metadataVM.insertBefore(btn, menuBtn);
+      } else {
+        metadataVM.appendChild(btn);
+      }
     }
+  } else {
+    // Search result cards (ytd-video-renderer): inject into the #buttons slot
+    const buttonsSlot = card.querySelector('#buttons');
+    if (!buttonsSlot) return;
+    buttonsSlot.appendChild(btn);
   }
 
   card.setAttribute(INJECTED_ATTR, '1');
