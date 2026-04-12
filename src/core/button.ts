@@ -5,6 +5,7 @@ import {
   makeErrorIcon,
 } from '../utils/icons';
 import { copyTranscript } from '../services/copyTranscript';
+import type { Storage } from '../services/storage';
 
 export type ButtonState = 'idle' | 'fetching' | 'success' | 'copied' | 'error';
 
@@ -63,12 +64,12 @@ function setButtonState(btn: HTMLButtonElement, state: ButtonState, errorMsg?: s
 
 // ─── CLICK HANDLER ────────────────────────────────────────────────────────────
 
-async function handleClick(btn: HTMLButtonElement, videoId: string): Promise<void> {
+async function handleClick(btn: HTMLButtonElement, videoId: string, storage: Storage): Promise<void> {
   if (btn.getAttribute('data-state') === 'fetching') return;
 
   setButtonState(btn, 'fetching');
 
-  const result = await copyTranscript(videoId);
+  const result = await copyTranscript(videoId, storage);
 
   if (result.ok) {
     setButtonState(btn, 'success');
@@ -81,7 +82,7 @@ async function handleClick(btn: HTMLButtonElement, videoId: string): Promise<voi
 
 // ─── FACTORY ─────────────────────────────────────────────────────────────────
 
-export function createButton(videoId: string, initialState: ButtonState = 'idle'): HTMLButtonElement {
+export function createButton(videoId: string, storage: Storage, initialState: ButtonState = 'idle'): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = 'yt-transcript-btn';
   btn.type = 'button';
@@ -103,7 +104,7 @@ export function createButton(videoId: string, initialState: ButtonState = 'idle'
   btn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
-    void handleClick(btn, videoId);
+    void handleClick(btn, videoId, storage);
   });
 
   setButtonState(btn, initialState);

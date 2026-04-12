@@ -1,5 +1,5 @@
 import { createButton } from '../core/button';
-import { hasCopied } from '../services/storage';
+import type { Storage } from '../services/storage';
 
 const INJECTED_ATTR = 'data-transcript-btn-injected';
 
@@ -28,14 +28,14 @@ function isWatchPage(): boolean {
   return window.location.pathname === '/watch';
 }
 
-export function injectIntoCard(card: Element): void {
+export function injectIntoCard(card: Element, storage: Storage): void {
   const videoId = extractVideoId(card);
   if (!videoId) return;
 
   if (card.hasAttribute(INJECTED_ATTR)) return;
 
-  const initialState = hasCopied(videoId) ? 'copied' : 'idle';
-  const btn = createButton(videoId, initialState);
+  const initialState = storage.hasCopied(videoId) ? 'copied' : 'idle';
+  const btn = createButton(videoId, storage, initialState);
 
   const metadataVM = card.querySelector('yt-lockup-metadata-view-model');
   if (metadataVM) {
@@ -65,7 +65,7 @@ export function injectIntoCard(card: Element): void {
   card.setAttribute(INJECTED_ATTR, '1');
 }
 
-export function injectAll(): void {
+export function injectAll(storage: Storage): void {
   const selector = [
     `ytd-rich-item-renderer:not([${INJECTED_ATTR}])`,
     `ytd-video-renderer:not([${INJECTED_ATTR}])`,
@@ -74,5 +74,5 @@ export function injectAll(): void {
     `yt-lockup-view-model:not([${INJECTED_ATTR}])`,
   ].join(',');
 
-  document.querySelectorAll(selector).forEach(injectIntoCard);
+  document.querySelectorAll(selector).forEach(card => injectIntoCard(card, storage));
 }
