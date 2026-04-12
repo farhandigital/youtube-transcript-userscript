@@ -1,0 +1,26 @@
+import { fetchTranscript } from './transcript';
+import { writeClipboard } from './clipboard';
+import { markCopied } from './storage';
+
+export type CopyResult =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+/**
+ * Pure orchestration of the transcript copy workflow.
+ * Knows nothing about the DOM or button state — only the business logic sequence.
+ * Decouples the user action from the UI layer.
+ */
+export async function copyTranscript(videoId: string): Promise<CopyResult> {
+  try {
+    const transcript = await fetchTranscript(videoId);
+    await writeClipboard(transcript);
+    await markCopied(videoId);
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : 'Failed to copy transcript',
+    };
+  }
+}

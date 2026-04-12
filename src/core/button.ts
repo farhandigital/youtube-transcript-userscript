@@ -4,9 +4,7 @@ import {
   makeCheckIcon,
   makeErrorIcon,
 } from '../utils/icons';
-import { fetchTranscript } from '../services/transcript';
-import { writeClipboard } from '../services/clipboard';
-import { markCopied } from '../services/storage';
+import { copyTranscript } from '../services/copyTranscript';
 
 export type ButtonState = 'idle' | 'fetching' | 'success' | 'copied' | 'error';
 
@@ -70,16 +68,13 @@ async function handleClick(btn: HTMLButtonElement, videoId: string): Promise<voi
 
   setButtonState(btn, 'fetching');
 
-  try {
-    const transcript = await fetchTranscript(videoId);
-    await writeClipboard(transcript);
-    await markCopied(videoId); // persist before flipping UI
+  const result = await copyTranscript(videoId);
 
+  if (result.ok) {
     setButtonState(btn, 'success');
     setTimeout(() => { setButtonState(btn, 'copied'); }, SUCCESS_RESET_MS);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed';
-    setButtonState(btn, 'error', msg);
+  } else {
+    setButtonState(btn, 'error', result.reason);
     setTimeout(() => { setButtonState(btn, 'idle'); }, SUCCESS_RESET_MS);
   }
 }
