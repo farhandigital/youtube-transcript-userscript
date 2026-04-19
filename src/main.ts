@@ -1,4 +1,4 @@
-import './core/button.css';
+import './ui/button.css';
 import { Storage } from './services/storage';
 import { injectAll } from './utils/dom';
 
