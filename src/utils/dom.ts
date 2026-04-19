@@ -31,7 +31,6 @@ function isWatchPage(): boolean {
 }
 
 // ─── WATCH PAGE (/watch — sidebar recommendations) ────────────────────────────
-// Target: yt-lockup-metadata-view-model > text container
 
 const WATCH_TEXT_CONTAINER = '.yt-lockup-metadata-view-model__text-container';
 
@@ -45,7 +44,6 @@ function injectWatchPage(metadataVM: Element, btn: HTMLButtonElement): boolean {
 }
 
 // ─── FEED / HOMEPAGE (yt-lockup-view-model outside /watch) ───────────────────
-// Target: yt-lockup-metadata-view-model > before menu button, or appended
 
 const FEED_MENU_BUTTON = '.yt-lockup-metadata-view-model__menu-button';
 
@@ -59,7 +57,6 @@ function injectFeedCard(metadataVM: Element, btn: HTMLButtonElement): void {
 }
 
 // ─── SEARCH RESULTS (ytd-video-renderer) ─────────────────────────────────────
-// Target: #buttons slot inside the card
 
 const SEARCH_BUTTONS_SLOT = '#buttons';
 
