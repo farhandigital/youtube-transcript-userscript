@@ -32,7 +32,7 @@ function isWatchPage(): boolean {
 
 // ─── WATCH PAGE (/watch — sidebar recommendations) ────────────────────────────
 
-const WATCH_TEXT_CONTAINER = '.yt-lockup-metadata-view-model__text-container';
+const WATCH_TEXT_CONTAINER = '.ytLockupMetadataViewModelTextContainer';
 
 function injectWatchPage(metadataVM: Element, btn: HTMLButtonElement): boolean {
   const textContainer = metadataVM.querySelector(WATCH_TEXT_CONTAINER);
