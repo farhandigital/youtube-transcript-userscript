@@ -1,7 +1,9 @@
-import { createButton } from '../core/button';
+import { createButton } from '../ui/button';
 import type { Storage } from '../services/storage';
 
 const INJECTED_ATTR = 'data-transcript-btn-injected';
+
+// ─── SHARED ───────────────────────────────────────────────────────────────────
 
 export function extractVideoId(card: Element): string | null {
   const anchors = card.querySelectorAll('a[href*="/watch?v="]');
@@ -28,6 +30,51 @@ function isWatchPage(): boolean {
   return window.location.pathname === '/watch';
 }
 
+// ─── WATCH PAGE (/watch — sidebar recommendations) ────────────────────────────
+// Target: yt-lockup-metadata-view-model > text container
+
+const WATCH_TEXT_CONTAINER = '.yt-lockup-metadata-view-model__text-container';
+
+function injectWatchPage(metadataVM: Element, btn: HTMLButtonElement): boolean {
+  const textContainer = metadataVM.querySelector(WATCH_TEXT_CONTAINER);
+  if (!textContainer) return false;
+
+  btn.classList.add('yt-transcript-btn--stacked');
+  textContainer.appendChild(btn);
+  return true;
+}
+
+// ─── FEED / HOMEPAGE (yt-lockup-view-model outside /watch) ───────────────────
+// Target: yt-lockup-metadata-view-model > before menu button, or appended
+
+const FEED_MENU_BUTTON = '.yt-lockup-metadata-view-model__menu-button';
+
+function injectFeedCard(metadataVM: Element, btn: HTMLButtonElement): void {
+  const menuBtn = metadataVM.querySelector(FEED_MENU_BUTTON);
+  if (menuBtn) {
+    metadataVM.insertBefore(btn, menuBtn);
+  } else {
+    metadataVM.appendChild(btn);
+  }
+}
+
+// ─── SEARCH RESULTS (ytd-video-renderer) ─────────────────────────────────────
+// Target: #buttons slot inside the card
+
+const SEARCH_BUTTONS_SLOT = '#buttons';
+
+function injectSearchCard(card: Element, btn: HTMLButtonElement): boolean {
+  const buttonsSlot = card.querySelector(SEARCH_BUTTONS_SLOT);
+  if (!buttonsSlot) return false;
+
+  buttonsSlot.appendChild(btn);
+  return true;
+}
+
+// ─── ORCHESTRATOR ─────────────────────────────────────────────────────────────
+
+const METADATA_VM = 'yt-lockup-metadata-view-model';
+
 export function injectIntoCard(card: Element, storage: Storage): void {
   const videoId = extractVideoId(card);
   if (!videoId) return;
@@ -37,42 +84,38 @@ export function injectIntoCard(card: Element, storage: Storage): void {
   const initialState = storage.hasCopied(videoId) ? 'copied' : 'idle';
   const btn = createButton(videoId, storage, initialState);
 
-  const metadataVM = card.querySelector('yt-lockup-metadata-view-model');
+  const metadataVM = card.querySelector(METADATA_VM);
   if (metadataVM) {
     if (metadataVM.hasAttribute(INJECTED_ATTR)) return;
     metadataVM.setAttribute(INJECTED_ATTR, '1');
 
-    if (isWatchPage()) {
-      const textContainer = metadataVM.querySelector('.yt-lockup-metadata-view-model__text-container');
-      if (!textContainer) return;
-      btn.classList.add('yt-transcript-btn--stacked');
-      textContainer.appendChild(btn);
-    } else {
-      const menuBtn = metadataVM.querySelector('.yt-lockup-metadata-view-model__menu-button');
-      if (menuBtn) {
-        metadataVM.insertBefore(btn, menuBtn);
-      } else {
-        metadataVM.appendChild(btn);
-      }
-    }
+    const injected = isWatchPage()
+      ? injectWatchPage(metadataVM, btn)
+      : (injectFeedCard(metadataVM, btn), true);
+
+    if (!injected) return;
   } else {
-    // Search result cards (ytd-video-renderer): inject into the #buttons slot
-    const buttonsSlot = card.querySelector('#buttons');
-    if (!buttonsSlot) return;
-    buttonsSlot.appendChild(btn);
+    if (!injectSearchCard(card, btn)) return;
   }
 
   card.setAttribute(INJECTED_ATTR, '1');
 }
 
+// ─── ENTRY POINT ─────────────────────────────────────────────────────────────
+// Card-level selectors — update here if YouTube renames its custom elements
+
+const CARD_SELECTORS = [
+  'ytd-rich-item-renderer',
+  'ytd-video-renderer',
+  'ytd-compact-video-renderer',
+  'ytd-grid-video-renderer',
+  'yt-lockup-view-model',
+];
+
 export function injectAll(storage: Storage): void {
-  const selector = [
-    `ytd-rich-item-renderer:not([${INJECTED_ATTR}])`,
-    `ytd-video-renderer:not([${INJECTED_ATTR}])`,
-    `ytd-compact-video-renderer:not([${INJECTED_ATTR}])`,
-    `ytd-grid-video-renderer:not([${INJECTED_ATTR}])`,
-    `yt-lockup-view-model:not([${INJECTED_ATTR}])`,
-  ].join(',');
+  const selector = CARD_SELECTORS
+    .map(s => `${s}:not([${INJECTED_ATTR}])`)
+    .join(',');
 
   document.querySelectorAll(selector).forEach(card => injectIntoCard(card, storage));
 }
